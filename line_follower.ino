@@ -1,11 +1,16 @@
 // Tommy Weir and Anusha Datar
 // PoE Lab 3: Line-Following Robot
 
+/*
+ * This file contains all of the arduino code associated with Principles of Engineering lab
+ * 3 as a consolidated unit. All files used to test electronics and mechanical assemblies can
+ * be found in the tests/ directory in this repository.
+ */
+
 // TODO :
   // Manual tuning + testing 
   // Potentially a more sophisticated controller?
-  // Serial interface to communicate with robot and update parameters in pseudo RT
-  // DEBUG prints + plot of sensor values + suggested motor speeds.
+  // DEBUG prints + plot of sensor values + suggested motor speeds for final report
 
 // Include headers for motor shield and connections.
 #include <Wire.h>
@@ -19,7 +24,6 @@ int rightSensorPin = A1;
 // Baudrate of serial. Important to match this on all programs.
 int baudrate = 9600;
 
-// TODO : These constants need to be determined and tuned.
 // Initial constants for motion controller.
 // The initial speed of each motor.
 int initialSpeed = 40; 
@@ -39,8 +43,7 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *leftMotor = AFMS.getMotor(leftMotorPin);
 Adafruit_DCMotor *rightMotor = AFMS.getMotor(rightMotorPin);
 
-
-////// Helper Methods.
+//// Helper Methods.
 int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
 /* Utility method to measure IR sensor data on some pin for some number of 
  * samples to check if the value is above some user-specified threshold.
@@ -53,8 +56,8 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
  *                         Increasing the number of samples will decrease the 
  *                         amount of jerkiness but also increase the amount of error.
  * 
- * Returns FALSE if the sensor value is lower than the threshold and TRUE
- * if the value does exceed the threshold.
+ * Returns : FALSE if the sensor value is LOWER than the threshold and TRUE
+ *           if the value is HIGHER than the threshold.
  * 
  * In the case of the line following robot, FALSE means that the value is BELOW the
  * threshold and the robot is ON the black tape, while TRUE means that the value
@@ -68,7 +71,8 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
     sum += analogRead(sensorPin);
     delay(10);  
   }
-  int average = sum/sensorPin;
+  // Grab average based on samples per measurement.
+  int average = sum/samplesPerMeasurement;
   if (average < threshold) {
     return false;
   }
@@ -84,27 +88,31 @@ void set_speed_and_direction(Adafruit_DCMotor *motor, int inputSpeed) {
    * 
    * Runs sanity and direction check and then assigns value to motor.
    */
+  int defaultDirection;
+   
   // If the direction is to stop.
   if (inputSpeed == 0) {
     motor->run(RELEASE);
     return;
   }
-  int defaultDirection;
+  
   // If the direction is backwards.
   if (inputSpeed < 0) {
     inputSpeed = -inputSpeed;
     defaultDirection = BACKWARD;
   }
+  
   // If the direction is forwards.
   else {
     defaultDirection = FORWARD; 
   }
-  // If the speed is too high.
+  
+  // If the speed is too high, cap it at 255.
   if (inputSpeed > 255) {
     inputSpeed = 255;
   }
 
-  // Run the motors.
+  // Run the motors as directed.
   motor->setSpeed(inputSpeed); 
   motor->run(defaultDirection);
 }
@@ -121,6 +129,36 @@ void loop() {
   int speedDelta = initialSpeedDelta;
   int threshold = initialThreshold;
   int samples = initialSamplesPerMeasurement;
+
+  // Check the serial interface in case any of these constants need to be changed. 
+  // Command formatting should be as such (note place value limitations): 
+  // - To set speed delta : "D : ###"
+  // - To set threshold : "T : ####"
+  // - To set sample rate : "S : ###"
+  if(Serial.available()){
+        String command;
+        command = Serial.readStringUntil("\n");
+        Serial.println(command);
+        if (command[0] == ('D')) {
+          speedDelta = (command.substring(4,7)).toInt();
+          Serial.print("Delta updated to : ");
+          Serial.print(speedDelta);
+          Serial.print('\n');
+        }
+        if (command[0] == 'T') {
+          threshold = (command.substring(4, 8)).toInt();
+          Serial.print("Threshold updated to : ");
+          Serial.print(threshold);
+          Serial.print('\n');
+        }
+        if (command[0] == 'S') {
+          samples = (command.substring(4, 7)).toInt();
+          Serial.print("Sample rate updated to : ");
+          Serial.print(samples);
+          Serial.print('\n');
+        }
+   }
+        
   bool leftSensorValue = verify_IR_sensor(leftSensorPin, threshold, initialSamplesPerMeasurement);
   // If the left sensor is on the tape, we want to speed up the left motor to get back on track.
   if (!leftSensorValue) {
