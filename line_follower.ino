@@ -45,17 +45,19 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
 /* Utility method to measure IR sensor data on some pin for some number of 
  * samples to check if the value is above some user-specified threshold.
  * 
- * sensorPin = INT The pin of the sensor to read data on - should be 
- * an analog input pin ideally.
- * threshold = INT The pin of the se
- * samplesPerMeasurement = INT the number of samples to read per measurement.
- * Increasing the number of samples will decrease the amount of jerkiness.
+ * sensorPin : INT The pin of the sensor to read data on - should be 
+ *             an analog input pin ideally.
+ * threshold : INT The value BELOW which the value is black tape and ABOVE which
+ *             the value is tile floor.
+ * samplesPerMeasurement : INT the number of samples to read per measurement.
+ *                         Increasing the number of samples will decrease the 
+ *                         amount of jerkiness but also increase the amount of error.
  * 
- * Returns TRUE if the sensor value is lower than the threshold and FALSE
+ * Returns FALSE if the sensor value is lower than the threshold and TRUE
  * if the value does exceed the threshold.
  * 
- * In the case of the line following robot, TRUE means that the value is BELOW the
- * threshold and the robot is ON the black tape, while FALSE means that the value
+ * In the case of the line following robot, FALSE means that the value is BELOW the
+ * threshold and the robot is ON the black tape, while TRUE means that the value
  * is ABOVE the threshold and the robot is OFF the black tape.
  * 
  * Kept all values as ints to maximize for efficiency here because of the high
@@ -64,14 +66,14 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
   int sum = 0;
   for (int numberOfReads = 0; numberOfReads < samplesPerMeasurement; numberOfReads++) {
     sum += analogRead(sensorPin);
-    delay(2);  
+    delay(10);  
   }
   int average = sum/sensorPin;
   if (average < threshold) {
-    return true;
+    return false;
   }
   else {
-    return false;
+    return true;
   }
 }
 void set_speed_and_direction(Adafruit_DCMotor *motor, int inputSpeed) {
@@ -120,15 +122,15 @@ void loop() {
   int threshold = initialThreshold;
   int samples = initialSamplesPerMeasurement;
   bool leftSensorValue = verify_IR_sensor(leftSensorPin, threshold, initialSamplesPerMeasurement);
-  // If the left sensor ia off the tape, we want to speed up the left motor to get back on track.
+  // If the left sensor is on the tape, we want to speed up the left motor to get back on track.
   if (!leftSensorValue) {
     // TODO Figure out passing this pointer correctly.
-    set_speed_and_direction(leftMotor, speedDelta);
-    set_speed_and_direction(rightMotor, -speedDelta);
+    set_speed_and_direction(leftMotor, -speedDelta);
+    set_speed_and_direction(rightMotor, speedDelta);
   }
   bool rightSensorValue = verify_IR_sensor(leftSensorPin, threshold, initialSamplesPerMeasurement);
   if (!rightSensorValue) {
-    set_speed_and_direction(rightMotor, speedDelta);
-    set_speed_and_direction(leftMotor, -speedDelta);
+    set_speed_and_direction(rightMotor, -speedDelta);
+    set_speed_and_direction(leftMotor, speedDelta);
   }
 }
