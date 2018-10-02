@@ -17,8 +17,8 @@
 #include <Adafruit_MotorShield.h>
 
 // Pin definitions and associated constants.
-int leftMotorPin = 3;
-int rightMotorPin = 4;
+int leftMotorPin = 1;
+int rightMotorPin = 2;
 int leftSensorPin = A0;
 int rightSensorPin = A1; 
 // Baudrate of serial. Important to match this on all programs.
@@ -26,14 +26,14 @@ int baudrate = 9600;
 
 // Initial constants for motion controller.
 // The initial speed of each motor.
-int initialSpeed = 40; 
+int initialSpeed = 30; 
 // The initial speed by which to turn the motors if the tape is recognized.
 // NOTE: This slows down the corresponding motor and speeds up the opposite motor 
 // at the same time, so the net delta is 2 x initial_speed_delta/ 
-int initialSpeedDelta = 30;
-// The initial threshold for the IR sensor - below this value is black tape, above
+int initialSpeedDelta = 15;
+// The initial threshold for the IR sensor - ABOVE this value is black tape, BELOW
 // this value is the tile floor.
-int initialThreshold = 970;
+int initialThreshold = 950;
 // The samples per measurement to start with for the IR sensor. 
 int initialSamplesPerMeasurement = 5;
 
@@ -56,12 +56,12 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
  *                         Increasing the number of samples will decrease the 
  *                         amount of jerkiness but also increase the amount of error.
  * 
- * Returns : FALSE if the sensor value is LOWER than the threshold and TRUE
- *           if the value is HIGHER than the threshold.
+ * Returns : FALSE if the sensor value is HIGHER than the threshold and TRUE
+ *           if the value is LOWER than the threshold.
  * 
- * In the case of the line following robot, FALSE means that the value is BELOW the
+ * In the case of the line following robot, FALSE means that the value is ABOVE the
  * threshold and the robot is ON the black tape, while TRUE means that the value
- * is ABOVE the threshold and the robot is OFF the black tape.
+ * is BELOW the threshold and the robot is OFF the black tape.
  * 
  * Kept all values as ints to maximize for efficiency here because of the high
  * volume of calls made on this function.
@@ -73,7 +73,7 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
   }
   // Grab average based on samples per measurement.
   int average = sum/samplesPerMeasurement;
-  if (average < threshold) {
+  if (average > threshold) {
     return false;
   }
   else {
@@ -158,17 +158,28 @@ void loop() {
           Serial.print('\n');
         }
    }
-        
   bool leftSensorValue = verify_IR_sensor(leftSensorPin, threshold, initialSamplesPerMeasurement);
+  bool rightSensorValue = verify_IR_sensor(rightSensorPin, threshold, initialSamplesPerMeasurement);
   // If the left sensor is on the tape, we want to speed up the left motor to get back on track.
   if (!leftSensorValue) {
     // TODO Figure out passing this pointer correctly.
     set_speed_and_direction(leftMotor, -speedDelta);
     set_speed_and_direction(rightMotor, speedDelta);
+    Serial.print("Left above threshold. Speed delta: ");
+    Serial.print(speedDelta);
+    Serial.print("\n");
   }
-  bool rightSensorValue = verify_IR_sensor(leftSensorPin, threshold, initialSamplesPerMeasurement);
   if (!rightSensorValue) {
     set_speed_and_direction(rightMotor, -speedDelta);
     set_speed_and_direction(leftMotor, speedDelta);
+    Serial.print("Right above threshold. Speed delta: ");
+    Serial.print(speedDelta);
+    Serial.print("\n");
   }
+  if (leftSensorValue && rightSensorValue) {
+    set_speed_and_direction(rightMotor, initialSpeed);
+    set_speed_and_direction(leftMotor, initialSpeed);
+    Serial.print("Going forwards. \n");
+  }
+  delay(20);
 }
