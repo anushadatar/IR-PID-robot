@@ -30,12 +30,16 @@ int initialSpeed = 30;
 // The initial speed by which to turn the motors if the tape is recognized.
 // NOTE: This slows down the corresponding motor and speeds up the opposite motor 
 // at the same time, so the net delta is 2 x initial_speed_delta/ 
-int initialSpeedDelta = 15;
+int initialSpeedDelta = 30;
 // The initial threshold for the IR sensor - ABOVE this value is black tape, BELOW
 // this value is the tile floor.
 int initialThreshold = 950;
 // The samples per measurement to start with for the IR sensor. 
-int initialSamplesPerMeasurement = 5;
+int initialSamplesPerMeasurement = 1;
+// The amount of time to wait in between adjustments.
+int initialWait = 5;
+// Our right motor is a little slower than our left motor. We can adjust for that in software :)
+int rightMotorConstant = 7;
 
 // Create the motor shield object with the default I2C address.
 // Configure motor as specified in program.
@@ -129,12 +133,13 @@ void loop() {
   int speedDelta = initialSpeedDelta;
   int threshold = initialThreshold;
   int samples = initialSamplesPerMeasurement;
-
+  int wait = initialWait;
   // Check the serial interface in case any of these constants need to be changed. 
   // Command formatting should be as such (note place value limitations): 
   // - To set speed delta : "D : ###"
   // - To set threshold : "T : ####"
   // - To set sample rate : "S : ###"
+  // - To set delay : "W : ##"
   if(Serial.available()){
         String command;
         command = Serial.readStringUntil("\n");
@@ -157,29 +162,42 @@ void loop() {
           Serial.print(samples);
           Serial.print('\n');
         }
+        if (command[0] == 'W') {
+          wait = (command.substring(4, 6)).toInt();
+          Serial.print("Wait time update to : ");
+          Serial.print(wait);
+          Serial.print('\n');
+        }
    }
   bool leftSensorValue = verify_IR_sensor(leftSensorPin, threshold, initialSamplesPerMeasurement);
   bool rightSensorValue = verify_IR_sensor(rightSensorPin, threshold, initialSamplesPerMeasurement);
   // If the left sensor is on the tape, we want to speed up the left motor to get back on track.
   if (!leftSensorValue) {
-    // TODO Figure out passing this pointer correctly.
+    set_speed_and_direction(leftMotor, 0);
+    set_speed_and_direction(rightMotor, 0);
+    delay(2);
     set_speed_and_direction(leftMotor, -speedDelta);
-    set_speed_and_direction(rightMotor, speedDelta);
+    set_speed_and_direction(rightMotor, speedDelta + rightMotorConstant);
     Serial.print("Left above threshold. Speed delta: ");
     Serial.print(speedDelta);
     Serial.print("\n");
+    delay(100);
   }
   if (!rightSensorValue) {
-    set_speed_and_direction(rightMotor, -speedDelta);
+    set_speed_and_direction(leftMotor, 0);
+    set_speed_and_direction(rightMotor, 0);
+    delay(2);
+    set_speed_and_direction(rightMotor, -speedDelta - rightMotorConstant);
     set_speed_and_direction(leftMotor, speedDelta);
     Serial.print("Right above threshold. Speed delta: ");
     Serial.print(speedDelta);
     Serial.print("\n");
+    delay(50);
   }
   if (leftSensorValue && rightSensorValue) {
-    set_speed_and_direction(rightMotor, initialSpeed);
+    set_speed_and_direction(rightMotor, initialSpeed + rightMotorConstant);
     set_speed_and_direction(leftMotor, initialSpeed);
     Serial.print("Going forwards. \n");
   }
-  delay(20);
+  delay(5);
 }
