@@ -117,6 +117,9 @@ void set_speed_and_direction(Adafruit_DCMotor *motor, int inputSpeed) {
 }
 
 void setup() {
+  /*
+  Sets up appropriate pins, motor shields, and dynamic constants.
+  */
   pinMode(rightSensorPin, INPUT);
   pinMode(leftSensorPin, INPUT);
   Serial.begin(baudrate);
@@ -133,6 +136,7 @@ void loop() {
     Check the serial interface for commands, move along the track, check each WAIT and
     turn to adjust as needed.
   */
+  
   // Check the serial interface in case any of these constants need to be changed. 
   // Command formatting should be as such (note place value limitations): 
   // - To set speed delta : "D : ###"
