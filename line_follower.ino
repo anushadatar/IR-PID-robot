@@ -126,14 +126,15 @@ void setup() {
   pinMode(leftSensorPin, INPUT);
   Serial.begin(baudrate);
   AFMS.begin();
-}
-
-void loop() {
   // Set the initial constants. It can be tuned over serial as well, but we should have a starting point before setup.
   int speedDelta = initialSpeedDelta;
   int threshold = initialThreshold;
   int samples = initialSamplesPerMeasurement;
   int wait = initialWait;
+}
+
+void loop() {
+ 
   // Check the serial interface in case any of these constants need to be changed. 
   // Command formatting should be as such (note place value limitations): 
   // - To set speed delta : "D : ###"
