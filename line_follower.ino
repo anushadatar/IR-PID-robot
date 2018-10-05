@@ -7,11 +7,6 @@
  * be found in the tests/ directory in this repository.
  */
 
-// TODO :
-  // Manual tuning + testing 
-  // Potentially a more sophisticated controller?
-  // DEBUG prints + plot of sensor values + suggested motor speeds for final report
-
 // Include headers for motor shield and connections.
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
@@ -134,7 +129,10 @@ void setup() {
 }
 
 void loop() {
- 
+  /*
+    Check the serial interface for commands, move along the track, check each WAIT and
+    turn to adjust as needed.
+  */
   // Check the serial interface in case any of these constants need to be changed. 
   // Command formatting should be as such (note place value limitations): 
   // - To set speed delta : "D : ###"
@@ -174,9 +172,11 @@ void loop() {
   bool rightSensorValue = verify_IR_sensor(rightSensorPin, threshold, initialSamplesPerMeasurement);
   // If the left sensor is on the tape, we want to speed up the left motor to get back on track.
   if (!leftSensorValue) {
+    // Stop for a second to tune turning.
     set_speed_and_direction(leftMotor, 0);
     set_speed_and_direction(rightMotor, 0);
     delay(2);
+    // Move in opposite direction
     set_speed_and_direction(leftMotor, -speedDelta);
     set_speed_and_direction(rightMotor, speedDelta + rightMotorConstant);
     Serial.print("Left above threshold. Speed delta: ");
@@ -193,12 +193,12 @@ void loop() {
     Serial.print("Right above threshold. Speed delta: ");
     Serial.print(speedDelta);
     Serial.print("\n");
-    delay(50);
+    delay(100);
   }
   if (leftSensorValue && rightSensorValue) {
     set_speed_and_direction(rightMotor, initialSpeed + rightMotorConstant);
     set_speed_and_direction(leftMotor, initialSpeed);
     Serial.print("Going forwards. \n");
   }
-  delay(5);
+  delay(wait);
 }
