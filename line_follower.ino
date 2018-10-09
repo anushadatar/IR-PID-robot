@@ -49,7 +49,7 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
  * 
  * sensorPin : INT The pin of the sensor to read data on - should be 
  *             an analog input pin ideally.
- * threshold : INT The value BELOW which the value is black tape and ABOVE which
+ * threshold : INT The value ABOVE which the value is black tape and BELOW which
  *             the value is tile floor.
  * samplesPerMeasurement : INT the number of samples to read per measurement.
  *                         Increasing the number of samples will decrease the 
@@ -59,8 +59,8 @@ int verify_IR_sensor(int sensorPin, int threshold, int samplesPerMeasurement) {
  *           if the value is LOWER than the threshold.
  * 
  * In the case of the line following robot, FALSE means that the value is ABOVE the
- * threshold and the robot is ON the black tape, while TRUE means that the value
- * is BELOW the threshold and the robot is OFF the black tape.
+ * threshold and the robot is ON the black tape and so needs to adjust,
+ * while TRUE means that the value is BELOW the threshold and the robot is OFF the black tape.
  * 
  * Kept all values as ints to maximize for efficiency here because of the high
  * volume of calls made on this function.
@@ -188,6 +188,7 @@ void loop() {
     Serial.print("\n");
     delay(100);
   }
+  // If the right sensor is on the tape, we want to speed up the left motor to get back on track.
   if (!rightSensorValue) {
     set_speed_and_direction(leftMotor, 0);
     set_speed_and_direction(rightMotor, 0);
