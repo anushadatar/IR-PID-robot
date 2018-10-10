@@ -1,20 +1,27 @@
-leftSensorData = linspace(0, 1023);
-rightSensorData = linspace(0, 1023);
-rightWheel = linspace(0, 1023);
-leftWheel = linspace(0, 1023);
-
-for i = leftSensorData
-    if i > 950 
-        % Turning
-        rightWheel(i) = 30;
-        leftWheel(i) = -30; 
-    else 
-        % Go straight
-        rightWheel(i) = 30;
-        leftWheel(i) = 30;
+load matlab.mat
+for n = 1:length(leftSensor)
+    if rightWheel(n) ~= 37
+        rightWheel(n) = leftWheel(n);
+        leftWheel(n) = leftWheelturn(n);
     end
-end 
-
-% Do same thing for right sensor
-
-% Plot with lots of colors - left sensor response and each motor speed
+end
+%%
+t = [1:length(leftSensor)]*5;
+figure
+clf
+subplot(2,1,1)
+plot(t,leftSensor)
+hold on
+plot(t,rightSensor)
+title('Left and Right Sensor Data')
+legend('Left Sensor Data', 'Right Sensor Data','Location', 'best','Orientation','horizontal')
+ylabel('Magnitude')
+xlabel('Time (ms)')
+subplot(2,1,2)
+plot(t,leftWheel)
+hold on
+plot(t,rightWheel)
+title('Left and Right Wheel Velocities')
+ylabel('Magnitude')
+xlabel('Time (ms)')
+legend('Left Wheel','Right Wheel', 'Location', 'best','Orientation','horizontal')
